@@ -1,0 +1,230 @@
+#!/bin/bash
+
+./clean
+
+# Get fields
+
+echo -n "Reading fields from parameters.xml... "
+
+simulation_time=($(cat parameters.xml | grep -oP '(?<=simulation_time>)[^<]+'))
+
+n_projects=($(cat parameters.xml | grep -oP '(?<=n_projects>)[^<]+'))
+snumber=($(cat parameters.xml | grep -oP '(?<=snumber>)[^<]+'))
+name=($(cat parameters.xml | grep -oP '(?<=name>)[^<]+'))
+server_power=($(cat parameters.xml | grep -oP '(?<=server_pw>)[^<]+'))
+disk_bw=($(cat parameters.xml | grep -oP '(?<=disk_bw>)[^<]+'))
+ifgl_percentage=($(cat parameters.xml | grep -oP '(?<=ifgl_percentage>)[^<]+'))
+ifcd_percentage=($(cat parameters.xml | grep -oP '(?<=ifcd_percentage>)[^<]+'))
+input_file_size=($(cat parameters.xml | grep -oP '(?<=input_file_size>)[^<]+'))
+task_fpops=($(cat parameters.xml | grep -oP '(?<=task_fpops>)[^<]+'))
+delay_bound=($(cat parameters.xml | grep -oP '(?<=delay_bound>)[^<]+'))
+output_file_size=($(cat parameters.xml | grep -oP '(?<=output_file_size>)[^<]+'))
+min_quorum=($(cat parameters.xml | grep -oP '(?<=min_quorum>)[^<]+'))
+target_nresults=($(cat parameters.xml | grep -oP '(?<=target_nresults>)[^<]+'))
+max_error_results=($(cat parameters.xml | grep -oP '(?<=max_error_results>)[^<]+'))
+max_total_results=($(cat parameters.xml | grep -oP '(?<=max_total_results>)[^<]+'))
+success_percentage=($(cat parameters.xml | grep -oP '(?<=success_percentage>)[^<]+'))
+canonical_percentage=($(cat parameters.xml | grep -oP '(?<=success_percentage>)[^<]+'))
+max_success_results=($(cat parameters.xml | grep -oP '(?<=max_success_results>)[^<]+'))
+replication=($(cat parameters.xml | grep -oP '(?<=replication>)[^<]+'))
+nscheduling_servers=($(cat parameters.xml | grep -oP '(?<=nscheduling_servers>)[^<]+'))
+ndata_servers=($(cat parameters.xml | grep -oP '(?<=ndata_servers>)[^<]+'))
+
+n_groups=($(cat parameters.xml | grep -oP '(?<=n_groups>)[^<]+'))
+n_clients=($(cat parameters.xml | grep -oP '(?<=n_clients>)[^<]+'))
+connection_interval=($(cat parameters.xml | grep -oP '(?<=connection_interval>)[^<]+'))
+scheduling_interval=($(cat parameters.xml | grep -oP '(?<=scheduling_interval>)[^<]+'))
+gbw=($(cat parameters.xml | grep -oP '(?<=gbw>)[^<]+'))
+glatency=($(cat parameters.xml | grep -oP '(?<=glatency>)[^<]+'))
+traces_file=($(cat parameters.xml | grep -oP '(?<=traces_file>)[^<]+'))
+max_speed=($(cat parameters.xml | grep -oP '(?<=max_speed>)[^<]+'))
+min_speed=($(cat parameters.xml | grep -oP '(?<=min_speed>)[^<]+'))
+pv_distri=($(cat parameters.xml | grep -oP '(?<=pv_distri>)[^<]+'))
+pa_param=($(cat parameters.xml | grep -oP '(?<=pa_param>)[^<]+'))
+pb_param=($(cat parameters.xml | grep -oP '(?<=pb_param>)[^<]+'))
+av_distri=($(cat parameters.xml | grep -oP '(?<=av_distri>)[^<]+'))
+aa_param=($(cat parameters.xml | grep -oP '(?<=aa_param>)[^<]+'))
+ab_param=($(cat parameters.xml | grep -oP '(?<=ab_param>)[^<]+'))
+nv_distri=($(cat parameters.xml | grep -oP '(?<=nv_distri>)[^<]+'))
+na_param=($(cat parameters.xml | grep -oP '(?<=na_param>)[^<]+'))
+nb_param=($(cat parameters.xml | grep -oP '(?<=nb_param>)[^<]+'))
+att_projs=($(cat parameters.xml | grep -oP '(?<=att_projs>)[^<]+'))
+pnumber=($(cat parameters.xml | grep -oP '(?<=pnumber>)[^<]+'))
+priority=($(cat parameters.xml | grep -oP '(?<=priority>)[^<]+'))
+lsbw=($(cat parameters.xml | grep -oP '(?<=lsbw>)[^<]+'))
+lslatency=($(cat parameters.xml | grep -oP '(?<=lslatency>)[^<]+'))
+ldbw=($(cat parameters.xml | grep -oP '(?<=ldbw>)[^<]+'))
+ldlatency=($(cat parameters.xml | grep -oP '(?<=ldlatency>)[^<]+'))
+
+echo "Done"
+
+let j=0
+let total_clients=0
+let total_scheduling_servers=0
+let total_data_servers=0
+
+# Total data servers
+for ((i=0; i<n_projects; i++))
+do
+	((total_data_servers+=${ndata_servers[$i]}))
+	((total_scheduling_servers+=${nscheduling_servers[$i]}))
+done 
+
+# Compiling
+echo -n "Compiling... "
+cd Files
+line="#define NUMBER_PROJECTS ${n_projects}		\/\/ Number of projects"
+sed -i "s/^#define NUMBER_PROJECTS.*/${line}/" boinc_simulator.c
+line="#define NUMBER_SCHEDULING_SERVERS ${total_scheduling_servers}	\/\/ Number of scheduling servers"
+sed -i "s/^#define NUMBER_SCHEDULING_SERVERS.*/${line}/" boinc_simulator.c
+line="#define NUMBER_DATA_SERVERS ${total_data_servers}		\/\/ Number of data servers per project"
+sed -i "s/^#define NUMBER_DATA_SERVERS.*/${line}/" boinc_simulator.c
+line="#define MAX_SIMULATED_TIME ${simulation_time}		\/\/ Simulation time in hours"
+sed -i "s/^#define MAX_SIMULATED_TIME.*/${line}/" boinc_simulator.c
+line="#define NUMBER_CLIENT_GROUPS ${n_groups}		\/\/ Number of groups"
+sed -i "s/^#define NUMBER_CLIENT_GROUPS.*/${line}/" boinc_simulator.c
+make > /dev/null
+cd ..
+echo "Done"
+
+declare -a arg1	# Platform arguments
+declare -a arg2	# Deployment arguments
+declare -a arg3 # boinc_simulator args
+
+arg1[j++]=${n_groups}
+
+# Cluster arguments
+for ((i=0; i<n_groups; i++))
+do
+	((total_clients+=${n_clients[$i]}))
+	arg1[j++]=${glatency[$i]}
+	arg1[j++]=${gbw[$i]}
+	arg1[j++]=${n_clients[$i]}
+done
+
+arg1[j++]=${n_projects}
+
+# Server arguments
+for ((i=0; i<n_projects; i++))
+do
+	arg1[j++]=${server_power[$i]}
+	arg1[j++]=${nscheduling_servers[$i]}
+	arg1[j++]=${ndata_servers[$i]}
+done
+
+# Link arguments
+for ((i=0, l=0; i<n_groups; i++))
+do
+  arg1[j++]=${att_projs[$i]}
+  for((k=0; k<att_projs[i]; k++, l++))
+  do
+	arg1[j++]=${lslatency[$l]}
+	arg1[j++]=${lsbw[$l]}
+	arg1[j++]=${ldlatency[$l]}
+	arg1[j++]=${ldbw[$l]}	
+  done
+done
+
+# Route arguments
+for ((i=0, l=0; i<n_groups; i++))
+do
+  for((k=0; k<att_projs[i]; k++, l++))
+  do
+	arg1[j++]=${pnumber[$l]}
+  done
+done
+
+echo -n "Creating platform.xml... "
+
+##### Platform ######
+cd Files
+./create_platform ${arg1[@]}
+
+echo "Done"
+
+let j=0
+
+arg2[j++]=${n_projects}
+
+# Server arguments
+for ((i=0; i<n_projects; i++))
+do
+	arg2[j++]=${snumber[$i]}
+	arg2[j++]=${name[$i]}
+	arg2[j++]=${output_file_size[$i]}
+	arg2[j++]=${task_fpops[$i]}
+	arg2[j++]=${ifgl_percentage[$i]}
+	arg2[j++]=${ifcd_percentage[$i]}
+	arg2[j++]=${min_quorum[$i]}
+	arg2[j++]=${target_nresults[$i]}
+	arg2[j++]=${max_error_results[$i]}
+	arg2[j++]=${max_total_results[$i]}
+	arg2[j++]=${max_success_results[$i]}
+	arg2[j++]=${delay_bound[$i]}	
+	arg2[j++]=${success_percentage[$i]}
+	arg2[j++]=${canonical_percentage[$i]}		
+	arg2[j++]=${input_file_size[$i]}
+	arg2[j++]=${disk_bw[$i]}
+	arg2[j++]=${ndata_servers[$i]}	
+	arg2[j++]=${replication[$i]}
+	arg2[j++]=${nscheduling_servers[$i]}		
+done
+
+arg2[j++]=${n_groups}
+
+# Client parameters
+for ((i=0, l=0; i<n_groups; i++))
+do
+  arg2[j++]=${n_clients[$i]}
+  arg2[j++]=${att_projs[$i]}
+  arg2[j++]=${traces_file[$i]}
+  arg2[j++]=${connection_interval[$i]}
+  arg2[j++]=${scheduling_interval[$i]}
+  arg2[j++]=${max_speed[$i]}
+  arg2[j++]=${min_speed[$i]}
+  arg2[j++]=${pv_distri[$i]}
+  arg2[j++]=${pa_param[$i]}
+  arg2[j++]=${pb_param[$i]}
+  arg2[j++]=${av_distri[$i]}
+  arg2[j++]=${aa_param[$i]}
+  arg2[j++]=${ab_param[$i]}
+  arg2[j++]=${nv_distri[$i]}
+  arg2[j++]=${na_param[$i]}
+  arg2[j++]=${nb_param[$i]}
+  for((k=0; k<att_projs[i]; k++, l++))
+  do
+	arg2[j++]=${pnumber[$l]}
+	arg2[j++]=${priority[$l]}	
+  done
+done
+
+##### Deployment ######
+
+echo -n "Creating deployment.xml... "
+./create_deployment ${arg2[@]}
+echo "Done"
+
+cd ..
+
+# boinc_simulator arguments 
+for ((i=0, k=0, l=0; i<n_groups; i++))
+do
+  for((j=0; j<att_projs[$i]; j++, k++))
+  do
+	((arg3[${pnumber[$k]}]+=${n_clients[$i]}))
+  done
+done
+
+echo -n "Creating execute.sh... "
+cat <<EOF >execute
+#!/bin/bash
+cd Files
+./boinc_simulator platform.xml deployment.xml ${arg3[@]} ${nscheduling_servers[@]} ${total_clients} --cfg=contexts/stack_size:16
+cd ..
+EOF
+
+chmod 0777 execute
+
+echo "Done"
+
+echo "Complete"
