@@ -1,1 +1,3 @@
+#!/bin/bash
+
 cat dst | perl -MList::Util=shuffle -e 'print shuffle(<STDIN>);' > unsorted
