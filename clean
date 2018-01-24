@@ -1,8 +1,0 @@
-#!/bin/bash
-cd Files
-make clean > /dev/null
-rm -f platform.xml > /dev/null
-rm -f deployment.xml > /dev/null
-cd ..
-
-rm -f execute
