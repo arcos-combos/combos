@@ -32,7 +32,8 @@ int main(int argc, char *argv[]){
 	int64_t index = 1;
 	FILE *fd;
 	char buffer[256];
-	int n_projects, n_clusters, scheduling_server_number = 0;
+	int n_projects, n_clusters, scheduling_server_number = 0, data_client_server_number = 0;
+	int data_clients = 0;
 	/* Usage 
 	if (argc < 2) {
     		printf("Usage: %s n_clusters\n", argv[0]);
@@ -70,9 +71,11 @@ int main(int argc, char *argv[]){
 		fprintf(fd, "\n");
        		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index++]);	// Duracion de workunit (en flops)
 		fprintf(fd, "\n");
-       		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index++]);	// Percentage of input files generated locally
+		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index++]);	// Percentage of input files generated locally
 		fprintf(fd, "\n");
-       		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index++]);	// Percentage of times a client must download new input files (they can't use previous ones)
+		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index++]);	// Percentage of times a client must download new input files (they can't use previous ones)
+		fprintf(fd, "\n");
+		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index++]);	// Average workunits per input files
 		fprintf(fd, "\n");
 		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index++]);	// Quorum
 		fprintf(fd, "\n");
@@ -96,11 +99,15 @@ int main(int argc, char *argv[]){
 		fprintf(fd, "\n");
 		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index++]);	// Number of data servers
 		fprintf(fd, "\n");
-		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index++]);	// Input files replication
+		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index++]);	// Output files storage
+		fprintf(fd, "\n");
+		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index++]);	// Files replication in data servers
+		fprintf(fd, "\n");
+		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index++]);	// Files replication in data clients
 		fprintf(fd, "\n");
 		fprintf(fd, "   </process> ");
 		fprintf(fd, "\n");
-		index-=18;	
+		index-=21;	
 		fprintf(fd, "   <process host=\"b%s\" function=\"work_generator\"> ", argv[index]);
 		fprintf(fd, "\n");	
 		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index]);	// Numero del proyecto
@@ -121,7 +128,7 @@ int main(int argc, char *argv[]){
 		fprintf(fd, "\n");
 		
 		// Scheduling servers
-		for(j=0; j<atoi(argv[index+18]); j++){	
+		for(j=0; j<atoi(argv[index+21]); j++){	
 			fprintf(fd, "   <process host=\"s%d%d\" function=\"scheduling_server_requests\"> ", i+1, j);
 			fprintf(fd, "\n");
         		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index]);			// Numero del proyecto
@@ -142,7 +149,7 @@ int main(int argc, char *argv[]){
 		}
 
 		// Data servers
-		for(j=0; j<atoi(argv[index+16]); j++, l++){
+		for(j=0; j<atoi(argv[index+17]); j++, l++){
 			fprintf(fd, "   <process host=\"d%d%d\" function=\"data_server_requests\"> ", i+1, j);		
 			fprintf(fd, "\n");
 			fprintf(fd, "           <argument value=\"%d\"/> ", l);
@@ -159,7 +166,29 @@ int main(int argc, char *argv[]){
 		        fprintf(fd, "   </process> ");
 			fprintf(fd, "\n");
 		}
-		index+=19;		
+
+		// Data client servers
+		for(j=0; j<atoi(argv[index+22]); j++){
+			fprintf(fd, "   <process host=\"t%d%d\" function=\"data_client_server_requests\"> ", i+1, j);
+			fprintf(fd, "\n");
+        		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index]);			// Numero del proyecto
+			fprintf(fd, "\n");
+			fprintf(fd, "           <argument value=\"%d\"/> ", data_client_server_number);		// Numero del servidor
+			fprintf(fd, "\n");
+			fprintf(fd, "   </process> ");
+			fprintf(fd, "\n");
+
+			fprintf(fd, "   <process host=\"t%d%d\" function=\"data_client_server_dispatcher\"> ", i+1, j);
+			fprintf(fd, "\n");
+        		fprintf(fd, "           <argument value=\"%s\"/> ", argv[index]);			// Numero del proyecto
+			fprintf(fd, "\n");	
+			fprintf(fd, "           <argument value=\"%d\"/> ", data_client_server_number++);	// Numero del servidor
+			fprintf(fd, "\n");
+        		fprintf(fd, "   </process> ");
+			fprintf(fd, "\n");
+		}
+
+		index+=23;		
 	}
 
 	n_clusters = atoi(argv[index++]);
@@ -167,13 +196,13 @@ int main(int argc, char *argv[]){
 	/* PRINT CLIENTS*/
 	for(i=0; i<n_clusters;i++){
 		int n_clients = atoi(argv[index++]);
+		int ndata_clients = atoi(argv[index++]);
 		int att_projs = atoi(argv[index++]);
 		char* traces_file = bprintf("../%s", argv[index++]);
 		FILE *fd_traces = fopen(traces_file, "r");
 		free(traces_file);
 
-		// READ LINE
-		for(j=0; j<n_clients; j++){
+		for(j=0; j<n_clients-ndata_clients; j++){
 			if(j==0){
 				fprintf(fd, "   <process host=\"c%d%d\" function=\"client\"> ", i+1, j);
 				fprintf(fd, "\n");
@@ -195,7 +224,13 @@ int main(int argc, char *argv[]){
 				fprintf(fd, "\n");
         	        	fprintf(fd, "        <argument value=\"%s\"/>  ", argv[index++]); // <!-- B argument -->
 				fprintf(fd, "\n");
-        	        	fprintf(fd, "        <argument value=\"%s\"/>  ", argv[index++]); // <!-- Av. random distribution -->
+        	        	fprintf(fd, "        <argument value=\"%s\"/>  ", argv[index++]); // <!-- Db. random distribution -->
+				fprintf(fd, "\n");
+        	        	fprintf(fd, "        <argument value=\"%s\"/>  ", argv[index++]); // <!-- A argument -->
+				fprintf(fd, "\n");
+        	        	fprintf(fd, "        <argument value=\"%s\"/>  ", argv[index++]); // <!-- B argument -->
+				fprintf(fd, "\n");
+				fprintf(fd, "        <argument value=\"%s\"/>  ", argv[index++]); // <!-- Av. random distribution -->
 				fprintf(fd, "\n");
         	       		fprintf(fd, "        <argument value=\"%s\"/>  ", argv[index++]); // <!-- A argument -->
 				fprintf(fd, "\n");
@@ -237,6 +272,26 @@ int main(int argc, char *argv[]){
 
 		}
 		if(fd_traces !=  NULL) fclose(fd_traces);	
+		
+		for(;j<n_clients; j++){
+			fprintf(fd, "   <process host=\"c%d%d\" function=\"data_client_requests\"> ", i+1, j);
+			fprintf(fd, "\n");
+			fprintf(fd, "           <argument value=\"%d\"/> ", i);			// Cluster number
+			fprintf(fd, "\n");
+        		fprintf(fd, "           <argument value=\"%d\"/> ", data_clients);	// Data client number
+			fprintf(fd, "\n");
+			fprintf(fd, "   </process> ");
+			fprintf(fd, "\n");
+			
+			fprintf(fd, "   <process host=\"c%d%d\" function=\"data_client_dispatcher\"> ", i+1, j);
+			fprintf(fd, "\n");
+			fprintf(fd, "           <argument value=\"%d\"/> ", i);			// Cluster number
+			fprintf(fd, "\n");
+        		fprintf(fd, "           <argument value=\"%d\"/> ", data_clients++);	// Data client number
+			fprintf(fd, "\n");
+			fprintf(fd, "   </process> ");
+			fprintf(fd, "\n");
+		}
 	}
 
 	/* END */

@@ -1,29 +1,58 @@
 #!/bin/bash
 
-# 300,000 hosts, 2 days
+# 100,000 hosts, 1 day
 
-	line="<simulation_time>48<\/simulation_time>\t\t\t <!-- Simulation time in hours -->" 
-	sed -i "s/<simulation_time>.*/${line}/" parameters.xml	
-	line="<n_clients>300000<\/n_clients>\t\t\t <!-- Number of clients of the cluster -->" 
+	line="<n_clients>100000<\/n_clients>\t\t\t <!-- Number of clients of the cluster -->" 
 	sed -i "s/<n_clients>.*/${line}/" parameters.xml	
 	./generator
-	./execute > performance/2days/0300000
+	./execute > performance/1day/0100000
 	
-# 300,000 hosts, 3 days
+# 200,000 hosts, 1 day
 
-	line="<simulation_time>72<\/simulation_time>\t\t\t <!-- Simulation time in hours -->" 
-	sed -i "s/<simulation_time>.*/${line}/" parameters.xml	
+	line="<n_clients>200000<\/n_clients>\t\t\t <!-- Number of clients of the cluster -->" 
+	sed -i "s/<n_clients>.*/${line}/" parameters.xml	
+	./generator
+	./execute > performance/1day/0200000
+
+# 300,000 hosts, 1 day
+
 	line="<n_clients>300000<\/n_clients>\t\t\t <!-- Number of clients of the cluster -->" 
 	sed -i "s/<n_clients>.*/${line}/" parameters.xml	
 	./generator
-	./execute > performance/3days/0300000
+	./execute > performance/1day/0300000
 
-# 300,000 hosts, 4 days
+# 400,000 hosts, 1 day
 
-	line="<simulation_time>96<\/simulation_time>\t\t\t <!-- Simulation time in hours -->" 
-	sed -i "s/<simulation_time>.*/${line}/" parameters.xml	
-	line="<n_clients>300000<\/n_clients>\t\t\t <!-- Number of clients of the cluster -->" 
+	line="<n_clients>400000<\/n_clients>\t\t\t <!-- Number of clients of the cluster -->" 
 	sed -i "s/<n_clients>.*/${line}/" parameters.xml	
 	./generator
-	./execute > performance/4days/0300000
+	./execute > performance/1day/0400000
+
+# 500,000 hosts, 1 day
+
+	line="<n_clients>500000<\/n_clients>\t\t\t <!-- Number of clients of the cluster -->" 
+	sed -i "s/<n_clients>.*/${line}/" parameters.xml	
+	./generator
+	./execute > performance/1day/0500000
+
+# 600,000 hosts, 1 day
+
+	line="<n_clients>600000<\/n_clients>\t\t\t <!-- Number of clients of the cluster -->" 
+	sed -i "s/<n_clients>.*/${line}/" parameters.xml	
+	./generator
+	./execute > performance/1day/0600000
+
+# 700,000 hosts, 1 day
+
+	line="<n_clients>700000<\/n_clients>\t\t\t <!-- Number of clients of the cluster -->" 
+	sed -i "s/<n_clients>.*/${line}/" parameters.xml	
+	./generator
+	./execute > performance/1day/0700000
+
+# 800,000 hosts, 1 day
+
+	line="<n_clients>800000<\/n_clients>\t\t\t <!-- Number of clients of the cluster -->" 
+	sed -i "s/<n_clients>.*/${line}/" parameters.xml	
+	./generator
+	./execute > performance/1day/0800000
 
