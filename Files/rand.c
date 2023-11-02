@@ -110,7 +110,7 @@ double normal(double x, double s)
 /*---------- LOGNORMAL RANDOM VARIATE GENERATOR ------------*/
 double ran_lognormal(double p, double u)
 {
-	return exp(normal(u, p));
+	return exp(normal(p, u));
 }
 
 /* The Weibull distribution has the form,
